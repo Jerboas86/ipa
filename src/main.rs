@@ -1,5 +1,7 @@
 use std::fmt;
 
+use bytes::Bytes;
+use reqwest::blocking::Client;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -47,6 +49,16 @@ struct Audio {
     page_url: String,
     fetch_url: String,
     metadata_url: String,
+}
+
+impl Audio {
+    fn fetch(&self, client: &Client) -> reqwest::Result<Bytes> {
+        client
+            .get(&self.fetch_url)
+            .send()?
+            .error_for_status()?
+            .bytes()
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -362,6 +374,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             other => {
                 println!("[{}] {}", other, s.display_symbol)
             }
+        }
+    }
+
+    static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
+
+    let client = Client::builder().user_agent(APP_USER_AGENT).build()?;
+
+    if let Some(symbol) = dataset.symbols.iter().find(|s| s.symbol == "p") {
+        if let Some(audio) = &symbol.audio {
+            let b = audio.fetch(&client)?;
+            println!("{:?}", b)
         }
     }
 
