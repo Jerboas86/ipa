@@ -291,12 +291,7 @@ enum Roundness {
 
 impl fmt::Display for Roundness {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let value = match self {
-            Roundness::Rounded => "rounded",
-            Roundness::Unrounded => "unrounded",
-        };
-
-        f.write_str(value)
+        f.write_str(self.as_str())
     }
 }
 
