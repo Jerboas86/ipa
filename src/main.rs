@@ -1,7 +1,8 @@
-use std::fmt;
+use std::{fmt, io::Cursor};
 
 use bytes::Bytes;
 use reqwest::blocking::Client;
+use rodio::Decoder;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -384,7 +385,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(symbol) = dataset.symbols.iter().find(|s| s.symbol == "p") {
         if let Some(audio) = &symbol.audio {
             let b = audio.fetch(&client)?;
-            println!("{:?}", b)
+            let mut sink = rodio::DeviceSinkBuilder::open_default_sink()?;
+            sink.log_on_drop(false);
+            let player = rodio::Player::connect_new(&sink.mixer());
+            let source = Decoder::try_from(Cursor::new(b))?;
+            player.append(source);
+            player.sleep_until_end();
         }
     }
 
