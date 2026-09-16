@@ -317,6 +317,16 @@ impl Roundness {
     }
 }
 
+fn play(b: Bytes) -> Result<(), Box<dyn std::error::Error>> {
+    let mut sink = rodio::DeviceSinkBuilder::open_default_sink()?;
+    sink.log_on_drop(false);
+    let player = rodio::Player::connect_new(&sink.mixer());
+    let source = Decoder::try_from(Cursor::new(b))?;
+    player.append(source);
+    player.sleep_until_end();
+    Ok(())
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let raw = std::fs::read_to_string("src/data/ipa_symbols.json")?;
     let dataset: Dataset = serde_json::from_str(&raw)?;
@@ -385,12 +395,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(symbol) = dataset.symbols.iter().find(|s| s.symbol == "p") {
         if let Some(audio) = &symbol.audio {
             let b = audio.fetch(&client)?;
-            let mut sink = rodio::DeviceSinkBuilder::open_default_sink()?;
-            sink.log_on_drop(false);
-            let player = rodio::Player::connect_new(&sink.mixer());
-            let source = Decoder::try_from(Cursor::new(b))?;
-            player.append(source);
-            player.sleep_until_end();
+            play(b)?;
         }
     }
 
